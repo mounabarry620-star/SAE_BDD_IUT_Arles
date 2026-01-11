@@ -626,3 +626,28 @@ ALTER TABLE ONLY tarifvente
 -- PostgreSQL database dump complete
 --
 
+
+-- Mes requêtes sur la partie 3 SQL --
+
+
+-- a.1 Les articles jamais commandés
+
+SELECT numarticle, nomarticle
+FROM article
+WHERE numarticle NOT IN (
+    SELECT DISTINCT numarticle
+    FROM detailcommande
+);
+
+-- a.2 Les catégories jamais commandées
+
+SELECT numcategorie, libellecategorie
+FROM categorie
+WHERE numcategorie NOT IN (
+    SELECT numcategorie
+    FROM article
+    JOIN detailcommande ON article.numarticle = detailcommande.numarticle
+);
+
+
+
