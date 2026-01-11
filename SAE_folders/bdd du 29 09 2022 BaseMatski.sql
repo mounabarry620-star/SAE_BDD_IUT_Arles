@@ -630,7 +630,7 @@ ALTER TABLE ONLY tarifvente
 -- Mes requêtes sur la partie 3 SQL --
 
 
--- a.1 Les articles jamais commandés
+-- A.1 Les articles jamais commandés
 
 SELECT numarticle, nomarticle
 FROM article
@@ -639,7 +639,7 @@ WHERE numarticle NOT IN (
     FROM detailcommande
 );
 
--- a.2 Les catégories jamais commandées
+-- A.2 Les catégories jamais commandées
 
 SELECT numcategorie, libellecategorie
 FROM categorie
@@ -649,7 +649,7 @@ WHERE numcategorie NOT IN (
     JOIN detailcommande ON article.numarticle = detailcommande.numarticle
 );
 
---b. Une action commerciale a été menée début septembre 2022 sur les clients basés en
+--B. Une action commerciale a été menée début septembre 2022 sur les clients basés en
 --Suisse l’entreprise souhaiterait savoir s’il y a eu un effet sur les commandes
 --il s’agit ici d’afficher le montant total des commandes par mois pour les clients
 --suisses, pour s’il y a eu une évolution !
@@ -661,7 +661,8 @@ WHERE client.adressepaysclient = 'Suisse'
 GROUP BY EXTRACT(MONTH FROM datecommande)
 ORDER BY mois;
 
---c. Existe-t-il des clients qui n’ont jamais passé de commande ?
+--C. Existe-t-il des clients qui n’ont jamais passé de commande ?
+
 SELECT numclient, nomclient
 FROM client
 WHERE numclient NOT IN (
@@ -669,11 +670,52 @@ WHERE numclient NOT IN (
     FROM commande
 );
 
---d. Il semble que certaines commandes ne soient pas livrées totalement, le phénomène
+--D. Il semble que certaines commandes ne soient pas livrées totalement, le phénomène
 --est-il inquiétant ?
 --Afficher les numéros de commande, la date de la commande, les quantités
 --commandées et les livrées et la différence entre les deux. Seules les commandes qui
 --ne sont pas totalement livrées nous intéressent.
+
+SELECT
+    commande.numcommande,
+    commande.datecommande,
+    SUM(detailcommande.quantitecommandee) AS quantités_commandées,
+    SUM(detailcommande.quantitelivree) AS quantités_livrées,
+    (SUM(detailcommande.quantitecommandee) - SUM(detailcommande.quantitelivree)) AS reste_a_livrer
+FROM commande
+JOIN detailcommande ON commande.numcommande = detailcommande.numcommande
+GROUP BY commande.numcommande, commande.datecommande
+HAVING SUM(detailcommande.quantitecommandee) > SUM(detailcommande.quantitelivree);
+
+--E. Le comptable de l’entreprise sollicite votre aide pour l’aider à remplir la déclaration
+--de tva pour le dernier mois et notamment la tva collectée sur les ventes. En fonction
+--des types de clients il a besoin du montant des ventes HT correspondant à trois
+--ventilations :
+--• Vente à des clients en France
+--• Vente à des clients étrangers hors UE
+--• Vente à des clients étrangers dans UE
+--L’information sur ces trois types est indiquée dans la table étiquette sous la forme
+--d’un code type tva
+--• Vente à des clients en France (codetypetva =1)
+--• Vente à des clients étrangers hors UE (codetypetva =2)
+--• Vente à des clients étrangers dans UE (codetypetva =3)
+--Pour cette ventilation on a besoin du prix total des articles commandés et le prix
+--total des articles livrés pour chaque type de vente !
+
+SELECT 
+    etiquette.codetypetva,
+    SUM(detailcommande.quantitecommandee * article.prixvente) AS total_ht_commande,
+    SUM(detailcommande.quantitelivree * article.prixvente) AS total_ht_livre
+FROM client
+JOIN etiquette ON client.codeetiquette = etiquette.codeetiquette
+JOIN commande ON client.numclient = commande.numclient
+JOIN detailcommande ON commande.numcommande = detailcommande.numcommande
+JOIN article ON detailcommande.numarticle = article.numarticle
+WHERE EXTRACT(MONTH FROM commande.datecommande) = 9
+  AND EXTRACT(YEAR FROM commande.datecommande) = 2022
+GROUP BY etiquette.codetypetva
+ORDER BY etiquette.codetypetva;
+
 
 
 
