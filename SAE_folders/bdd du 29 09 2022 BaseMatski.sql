@@ -649,5 +649,38 @@ WHERE numcategorie NOT IN (
     JOIN detailcommande ON article.numarticle = detailcommande.numarticle
 );
 
+--b. Une action commerciale a été menée début septembre 2022 sur les clients basés en
+--Suisse l’entreprise souhaiterait savoir s’il y a eu un effet sur les commandes
+--il s’agit ici d’afficher le montant total des commandes par mois pour les clients
+--suisses, pour s’il y a eu une évolution !
+
+SELECT EXTRACT(MONTH FROM datecommande) AS mois, SUM(montantttc) AS chiffre_affaires_suisse
+FROM commande
+JOIN client ON commande.numclient = client.numclient
+WHERE client.adressepaysclient = 'Suisse'
+GROUP BY EXTRACT(MONTH FROM datecommande)
+ORDER BY mois;
+
+--c. Existe-t-il des clients qui n’ont jamais passé de commande ?
+SELECT numclient, nomclient
+FROM client
+WHERE numclient NOT IN (
+    SELECT DISTINCT numclient
+    FROM commande
+);
+
+--d. Il semble que certaines commandes ne soient pas livrées totalement, le phénomène
+--est-il inquiétant ?
+--Afficher les numéros de commande, la date de la commande, les quantités
+--commandées et les livrées et la différence entre les deux. Seules les commandes qui
+--ne sont pas totalement livrées nous intéressent.
+
+
+
+
+
+
+
+
 
 
